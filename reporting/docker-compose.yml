@@ -1,0 +1,14 @@
+version: "2"
+services:
+    mongodb:
+        image: mongo:latest
+        ports:
+          - "27017:27017"
+        volumes:
+          - /Users/cchadha2/Documents/Github-Private/santander/reporting/fields.txt:/data/fields.txt
+    mongo-seed:
+        build:
+          context: .
+          dockerfile: mongo.Dockerfile
+        links:
+          - mongodb
