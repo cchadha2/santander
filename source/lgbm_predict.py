@@ -7,49 +7,49 @@ from sklearn.model_selection import StratifiedKFold
 # Data parameters
 num_folds = 5
 SEED = 5000
-version = 1.2
+version = 1.5
 importance_prune = False
 num_features_to_keep = 100
 training_dataset = 'train'
 # Lightgbm parameters
 params = {
-        'num_leaves': 10,
-        'max_bin': 119,
-        'min_data_in_leaf': 11,
-        'learning_rate': 0.02,
-        'min_sum_hessian_in_leaf': 0.00245,
-        'bagging_fraction': 1.0,
-        'bagging_freq': 5,
-        'feature_fraction': 0.05,
-        'lambda_l1': 4.972,
-        'lambda_l2': 2.276,
-        'min_gain_to_split': 0.65,
-        'max_depth': 14,
-        'save_binary': True,
-        'seed': SEED,
-        'feature_fraction_seed': SEED,
-        'bagging_seed': SEED,
-        'drop_seed': SEED,
-        'data_random_seed': SEED,
-        'objective': 'binary',
-        'boosting_type': 'gbdt',
-        'verbose': 1,
-        'metric': 'auc',
-        'is_unbalance': True,
-        'boost_from_average': False,
-    }
+    'bagging_freq': 5,
+    'bagging_fraction': 0.4,
+    'boost_from_average':'false',
+    'boost': 'gbdt',
+    'feature_fraction': 0.05,
+    'learning_rate': 0.01,
+    'max_depth': -1,
+    'metric':'auc',
+    'min_data_in_leaf': 80,
+    'min_sum_hessian_in_leaf': 10.0,
+    'num_leaves': 13,
+    'num_threads': 8,
+    'tree_learner': 'serial',
+    'objective': 'binary',
+    'verbosity': 1
+}
 
-early_rounds = 100
-num_rounds = 10000
+
+early_rounds = 3000
+num_iterations = 1000000
 
 # Read in data files
 train = pd.read_csv('../data/train.csv.zip')
 test = pd.read_csv('../data/test.csv.zip')
 sub_df = pd.read_csv('../data/sample_submission.csv.zip')
 
+features_to_remove = ['var_15', 'var_174', 'var_150', 'var_139', 'var_127']
+train = train.drop(features_to_remove, axis=1)
+test = test.drop(features_to_remove, axis=1)
+
 # Drop ID_code
 train = train.drop(['ID_code'], axis=1)
 test = test.drop(['ID_code'], axis=1)
+
+# # Removing "fake" train rows
+# real_vs_fake_train = pd.read_csv('../output/real_vs_fake_train.csv')
+# train = train[real_vs_fake_train['target'] < 0.5]
 
 # Split train into features and target
 y = train['target']
@@ -75,7 +75,7 @@ for fold_, (trn_, val_) in enumerate(folds.split(X, y)):
     trn_data = lgb.Dataset(X.iloc[trn_][features], label=y.iloc[trn_])
     val_data = lgb.Dataset(X.iloc[val_][features], label=y.iloc[val_])
 
-    clf = lgb.train(params, trn_data, num_rounds, valid_sets=[trn_data, val_data], verbose_eval=1000,
+    clf = lgb.train(params, trn_data, num_iterations, valid_sets=[trn_data, val_data], verbose_eval=1000,
                     early_stopping_rounds=early_rounds)
 
     # Predict on validation fold
